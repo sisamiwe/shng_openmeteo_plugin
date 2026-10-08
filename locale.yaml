@@ -1,0 +1,4 @@
+plugin_translations:
+    "Methode '{method}' aufgerufen":
+        de: "Methode '{method}' aufgerufen"
+        en: "Method '{method}' called"

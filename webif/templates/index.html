@@ -1,0 +1,290 @@
+{% extends "base_plugin.html" %}
+
+{% set logo_frame = false %}
+
+<!-- auto-update every 10s -->
+{% set update_interval = 10000 %}
+{% set dataSet = null %}
+
+<!-- no extra buttons or reload/close needed -->
+{% set buttons = true %}
+{% set reload_button = false %}
+{% set close_button = false %}
+{% set autorefresh_buttons = true %}
+
+{% set row_count = true %}
+{% set initial_update = true %}
+
+
+{% block pluginstyles %}
+<style>
+  table th.value {
+    width: 140px;
+  }
+  .shng_effect_highlight {
+    background-color: #FFFFE0;
+  }
+  .shng_effect_standard {
+    background-color: none;
+  }
+</style>
+{% endblock pluginstyles %}
+
+
+{% block pluginscripts %}
+<script>
+	function sanitizeId(str) {
+		return str.replace(/[\/]/g, '_');
+	}
+
+	function handleUpdatedData(response, dataSet) {
+		if (dataSet === null) {
+			try {
+				var objResponse = JSON.parse(response);
+				for (var key in objResponse) {
+					if (!objResponse.hasOwnProperty(key) || key.startsWith('_')) continue;
+					var domId = sanitizeId(key) + '_value';
+					shngInsertText(domId, objResponse[key], 'maintable', 0.5);
+				}
+				shngInsertText('status', objResponse._status, null, 0);
+				if (objResponse._fetch_ago !== undefined) {
+					shngInsertText('data_age', formatSeconds(objResponse._fetch_ago), null, 0);
+				}
+				if (maintable) {
+					maintable.draw(false);
+				}
+			} catch (e) {
+				console.warn('handleUpdatedData parse error:', e);
+			}
+		}
+	}
+
+	function formatSeconds(s) {
+		if (!s || s <= 0) return 'never';
+		if (s < 60) return s + 's ago';
+		if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's ago';
+		return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm ago';
+	}
+</script>
+<script>
+    $(document).ready( function () {
+		$(window).trigger('datatables_defaults');
+		try {
+			maintable = $('#maintable').DataTable( {
+			  columnDefs: [{ "targets": [2], "className": "value"}].concat($.fn.dataTable.defaults.columnDefs),
+			  });
+		}
+		catch (e) {
+			console.warn("Datatable JS not loaded, showing standard table without reorder option " + e);
+		}
+    });
+</script>
+{% endblock pluginscripts %}
+
+
+{% block headtable %}
+<!-- add a style="min-width:..px;" if you want to define a minimum width for responsive behaviour -->
+<table class="table table-striped table-hover">
+	<tbody>
+		<tr>
+			<td class="py-1"><strong>{{ _('Instance') }}</strong></td>
+			<td class="py-1">{{ p.get_instance_name() }}</td>
+			<td class="py-1"></td>
+			<td class="py-1"><strong>{{ _('Cycle') }}</strong></td>
+			<td class="py-1">{{ (p._cycle | round(0) | int) ~ 's' if p._cycle else '-' }}</td>
+			<td class="py-1"></td>
+		</tr>
+		<tr>
+			<td class="py-1"><strong>{{ _('Status') }}</strong></td>
+			<td class="py-1" id="status">{{ 'alive' if p.alive else 'stopped' }}</td>
+			<td class="py-1"></td>
+			<td class="py-1"><strong>{{ _('Items') }}</strong></td>
+			<td class="py-1">{{ item_count }}</td>
+			<td class="py-1"></td>
+		</tr>
+		<tr>
+			<td class="py-1"><strong>{{ _('Last data fetch') }}</strong></td>
+			<td class="py-1" id="data_age">{{ _('initializing...') }}</td>
+			<td class="py-1"></td>
+			<td class="py-1"><strong>{{ _('Coordinates') }}</strong></td>
+			<td class="py-1">{{ '%.4f' % p._lat }}, {{ '%.4f' % p._lon }}</td>
+			<td class="py-1"></td>
+		</tr>
+	</tbody>
+</table>
+{% endblock headtable %}
+
+
+{% block buttons %}
+<div>
+	<button class="btn btn-shng btn-sm" onclick="$.getJSON('/openmeteo/force_update'); $('#data_age').text('{{ _('updating...') }}')">
+		<i class="fas fa-sync-alt"></i>&nbsp;{{ _('Jetzt aktualisieren') }}
+	</button>
+</div>
+{% endblock buttons %}
+
+
+{% set tabcount = 4 %}
+
+{% if item_count == 0 %}
+	{% set start_tab = 2 %}
+{% endif %}
+
+
+{% set tab1title = "<strong>" ~ p.get_shortname() ~ " {{ _('Items') }}</strong> (" ~ item_count ~ ")" %}
+{% block bodytab1 %}
+  <div class="m-2">
+    {{ _('Überblick über alle registrierten Open-Meteo Items.') }}
+  </div>
+
+	<table id="maintable" class="dataTableAdditional m-2">
+		<thead>
+			<tr>
+        <th></th>
+			  <th>{{ _('Item') }}</th>
+			  <th>{{ _('Matchstring') }}</th>
+			  <th class="value">{{ _('Wert') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for item in items %}
+			 {% set ms = p.get_item_mapping(item) %}
+			{% try %}
+			 {% set val = item() %}
+			{% except %}
+			 {% set val = '-' %}
+			{% endtry %}
+			{% set safe_id = item._path.replace('/', '_') %}
+			 <tr>
+			   <td></td>
+			   <td class="py-1">{{ item._path }}</td>
+			   <td class="py-1">{{ ms }}</td>
+			   <td class="py-1" id="{{ safe_id }}_value">{{ val }}</td>
+			 </tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% endblock bodytab1 %}
+
+
+{% set tab2title = "<strong>" ~ p.get_shortname() ~ " {{ _('Current')}}"</strong>" %}
+{% block bodytab2 %}
+  <div class="m-2">
+    {{ _('Aktuelle Wetterdaten direkt von der Open-Meteo API.') }}
+  </div>
+
+  {% set cur = p._data.get('current', {}) %}
+	<table id="currentable" class="dataTableAdditional m-2">
+		<thead>
+			<tr>
+        <th></th>
+			  <th>{{ _('Parameter') }}</th>
+			  <th class="value">{{ _('Wert') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for key in cur | sort %}
+			 <tr>
+			   <td></td>
+			   <td class="py-1">{{ key }}</td>
+			   <td class="py-1">{{ cur[key] }}</td>
+			 </tr>
+			{% endfor %}
+			{% if not cur %}
+			<tr>
+				<td></td>
+				<td class="py-1" colspan="2">{{ _('Keine Daten verfügbar') }}</td>
+			</tr>
+			{% endif %}
+		</tbody>
+	</table>
+
+<script>
+$(document).ready( function () {
+    $(window).trigger('datatables_defaults');
+    try {
+        $('#currentable').DataTable( {
+          columnDefs: [{ "targets": [2], "className": "value"}].concat($.fn.dataTable.defaults.columnDefs),
+        });
+    } catch (e) {
+        console.warn("Datatable JS not loaded: " + e);
+    }
+});
+</script>
+{% endblock bodytab2 %}
+
+
+{% set tab3title = "<strong>" ~ p.get_shortname() ~ " {{ _('Daily Forecast') }}</strong>" %}
+{% block bodytab3 %}
+  {% set dly = p._data.get('daily', {}) %}
+  {% set times = dly.get('time', []) %}
+  {% set sunrise = dly.get('sunrise', []) %}
+  {% set sunset = dly.get('sunset', []) %}
+  {% set tmin = dly.get('temperature_2m_min', []) %}
+  {% set tmax = dly.get('temperature_2m_max', []) %}
+  {% set precip = dly.get('precipitation_sum', []) %}
+  {% set wcode = dly.get('weather_code', []) %}
+
+	<table id="dailytable" class="dataTableAdditional m-2">
+		<thead>
+			<tr>
+        <th></th>
+			  <th>{{ _('Datum') }}</th>
+			  <th class="value">{{ _('Sonnenaufgang') }}</th>
+			  <th class="value">{{ _('Sonnenuntergang') }}</th>
+			  <th class="value">{{ _('T_min') }}</th>
+			  <th class="value">{{ _('T_max') }}</th>
+			  <th class="value">{{ _('Niederschlag') }}</th>
+			  <th class="value">{{ _('Wetter') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for i in range(times | length) %}
+			{% set sr = sunrise[i] if i < sunrise | length else '-' %}
+			{% set ss = sunset[i] if i < sunset | length else '-' %}
+			{% set tn = tmin[i] if i < tmin | length else '-' %}
+			{% set tx = tmax[i] if i < tmax | length else '-' %}
+			{% set pr = precip[i] if i < precip | length else '-' %}
+			{% set wc = wcode[i] if i < wcode | length else '-' %}
+			 <tr>
+			   <td></td>
+			   <td class="py-1">{{ times[i] }}</td>
+			   <td class="py-1">{{ sr }}</td>
+			   <td class="py-1">{{ ss }}</td>
+			   <td class="py-1">{{ tn }}</td>
+			   <td class="py-1">{{ tx }}</td>
+			   <td class="py-1">{{ pr }}</td>
+			   <td class="py-1">{{ wc }}</td>
+			 </tr>
+			{% endfor %}
+			{% if not times %}
+			<tr>
+				<td></td>
+				<td class="py-1" colspan="8">{{ _('Keine Daten verfügbar') }}</td>
+			</tr>
+			{% endif %}
+		</tbody>
+	</table>
+
+<script>
+$(document).ready( function () {
+    $(window).trigger('datatables_defaults');
+    try {
+        $('#dailytable').DataTable( {
+          columnDefs: [{ "targets": [2,3,4,5,6,7], "className": "value"}].concat($.fn.dataTable.defaults.columnDefs),
+        });
+    } catch (e) {
+        console.warn("Datatable JS not loaded: " + e);
+    }
+});
+</script>
+{% endblock bodytab3 %}
+
+
+{% set tab4title = "<strong>" ~ p.get_shortname() ~ " {{ _('API Raw Data') }}</strong>" %}
+{% block bodytab4 %}
+  <div class="m-2">
+    {{ _('Rohdaten der letzten API-Antwort.') }}
+  </div>
+  <pre class="m-2" style="max-height: 500px; overflow: auto; font-size: 0.8em;">{{ p._data | tojson(indent=2) }}</pre>
+{% endblock bodytab4 %}

@@ -1,0 +1,760 @@
+# Metadata for the plugin
+plugin:
+    # Global plugin attributes
+    type: web
+    description:
+        de: 'Wetterdaten über Open-Meteo API (kostenfrei, ohne API-Key).'
+        en: 'Weather data via Open-Meteo API (free, no API key required).'
+    maintainer: miwe77
+    state: develop
+    keywords: weather openmeteo
+    documentation: ''
+    support: ''
+    version: 1.0.0
+    sh_minversion: '1.10'
+    multi_instance: true
+    restartable: true
+    classname: OpenMeteo
+
+parameters:
+    pause_item:
+        type: str
+        default: ''
+        description:
+            de: 'Item, um die Ausführung des Plugins zu steuern'
+            en: 'Item for controlling plugin execution'
+    latitude:
+        type: num
+        mandatory: false
+        default: 0
+        description:
+            de: 'Latitude des Ortes, für den die Wetterdaten abgerufen werden sollen. Default: SmartHomeNG Settings'
+            en: 'Latitude for the location, of which weather data is requested. Default: SmartHomeNG Settings'
+    longitude:
+        type: num
+        mandatory: false
+        default: 0
+        description:
+            de: 'Longitude des Ortes, für den die Wetterdaten abgerufen werden sollen. Default: SmartHomeNG Settings.'
+            en: 'Longitude for the location, of which weather data is requested. Default: SmartHomeNG Settings.'
+    cycle:
+        type: int
+        default: 900
+        description:
+            de: 'Intervall in Sekunden zwischen zwei Abfragen. Open-Meteo erlaubt max. 10 Calls/Stunde bei kostenlosem Account.'
+            en: 'Interval in seconds between two API calls. Open-Meteo allows max. 10 calls/hour for free accounts.'
+    timezone:
+        type: str
+        default: auto
+        description:
+            de: 'Zeitzone für die Vorhersagedaten. "auto" verwendet die Zeitzone der Koordinaten.'
+            en: 'Timezone for forecast data. "auto" uses the timezone of the coordinates.'
+    temperature_unit:
+        type: str
+        default: 'celsius'
+        valid_list:
+            - celsius
+            - fahrenheit
+        description:
+            de: 'Temperatureinheit.'
+            en: 'Temperature unit.'
+    wind_speed_unit:
+        type: str
+        default: 'kmh'
+        valid_list:
+            - kmh
+            - mph
+            - ms
+            - knot
+        description:
+            de: 'Windeinheit.'
+            en: 'Wind speed unit.'
+    lang:
+        type: str
+        default: 'de'
+        valid_list:
+            - ''
+            - de
+            - en
+        description:
+            de: 'Sprache für WMO weather_code Textumsetzung. Leerwert deaktiviert.'
+            en: 'Language for WMO weather_code text conversion. Empty disables.'
+
+item_attributes:
+    om_matchstring:
+        type: str
+        description:
+            de: 'Pfad im Open-Meteo JSON, z.B. current/temperature_2m, daily/0/temperature_2m_max, hourly/0/weather_code'
+            en: 'Path in the Open-Meteo JSON, e.g. current/temperature_2m, daily/0/temperature_2m_max, hourly/0/weather_code'
+    om_matchstring_:
+        type: str
+        default: ''
+        description:
+            de: 'Matchstring mit Template-Variablen, z.B. "daily/{..:_day}/weather_code". Wird von om_matchstring überschrieben.'
+            en: 'Matchstring with template variables, e.g. "daily/{..:_day}/weather_code". Overridden by om_matchstring.'
+
+item_structs:
+
+    # WRAPPER STRUCT
+    weather:
+        name: Complete weather report from Open-Meteo API
+
+        locals:
+            lat:
+                type: num
+                om_matchstring_@instance: latitude
+            lon:
+                type: num
+                om_matchstring_@instance: longitude
+            elevation:
+                type: num
+                om_matchstring_@instance: elevation
+            timezone:
+                type: str
+                om_matchstring_@instance: timezone
+
+        struct:
+            - .current_weather
+            - .forecast_hourly
+            - .forecast_daily
+
+    # CURRENT WEATHER / FORECAST STRUCTS
+    current_weather:
+        name: Current weather from Open-Meteo API - By default, data is not written to database
+        my_database_currently: no
+        my_database_maxage: 92
+
+        currently:
+            my_database: ..:my_database_currently
+            my_database_maxage: ..:.
+
+            struct: ._currentFields
+
+    forecast_hourly:
+        name: Hourly forecast from Open-Meteo API - By default, data is not written to database
+        my_database_hourly: no
+        my_database_maxage: 92
+
+        hourly:
+            my_database: ..:my_database_hourly
+            my_database_maxage: ..:.
+
+            hour0:
+                _hour: 0
+                struct: ._hourFields
+
+            hour1:
+                _hour: 1
+                struct: ._hourFields
+
+            hour2:
+                _hour: 2
+                struct: ._hourFields
+
+            hour3:
+                _hour: 3
+                struct: ._hourFields
+
+            hour4:
+                _hour: 4
+                struct: ._hourFieldsCompact
+
+            hour5:
+                _hour: 5
+                struct: ._hourFieldsCompact
+
+            hour6:
+                _hour: 6
+                struct: ._hourFieldsCompact
+
+            hour7:
+                _hour: 7
+                struct: ._hourFieldsCompact
+
+            hour8:
+                _hour: 8
+                struct: ._hourFieldsCompact
+
+            hour9:
+                _hour: 9
+                struct: ._hourFieldsCompact
+
+            hour10:
+                _hour: 10
+                struct: ._hourFieldsCompact
+
+            hour11:
+                _hour: 11
+                struct: ._hourFieldsCompact
+
+            hour12:
+                _hour: 12
+                struct: ._hourFieldsCompact
+
+            hour13:
+                _hour: 13
+                struct: ._hourFieldsCompact
+
+            hour14:
+                _hour: 14
+                struct: ._hourFieldsCompact
+
+            hour15:
+                _hour: 15
+                struct: ._hourFieldsCompact
+
+            hour16:
+                _hour: 16
+                struct: ._hourFieldsCompact
+
+            hour17:
+                _hour: 17
+                struct: ._hourFieldsCompact
+
+            hour18:
+                _hour: 18
+                struct: ._hourFieldsCompact
+
+            hour19:
+                _hour: 19
+                struct: ._hourFieldsCompact
+
+            hour20:
+                _hour: 20
+                struct: ._hourFieldsCompact
+
+            hour21:
+                _hour: 21
+                struct: ._hourFieldsCompact
+
+            hour22:
+                _hour: 22
+                struct: ._hourFieldsCompact
+
+            hour23:
+                _hour: 23
+                struct: ._hourFieldsCompact
+
+    forecast_daily:
+        name: Daily forecast from Open-Meteo API - By default, data is not written to database
+        my_database_daily: no
+        my_database_maxage: 92
+
+        daily:
+            my_database: ..:my_database_daily
+            my_database_maxage: ..:.
+
+            day0:
+                name: Heute
+                _day: 0
+                struct: ._dayFields
+
+            day1:
+                name: Morgen
+                _day: 1
+                struct: ._dayFields
+
+            day2:
+                name: Uebermorgen
+                _day: 2
+                struct: ._dayFieldsCompact
+
+            day3:
+                name: Tag 3
+                _day: 3
+                struct: ._dayFieldsCompact
+
+            day4:
+                name: Tag 4
+                _day: 4
+                struct: ._dayFieldsCompact
+
+            day5:
+                name: Tag 5
+                _day: 5
+                struct: ._dayFieldsCompact
+
+            day6:
+                name: Tag 6
+                _day: 6
+                struct: ._dayFieldsCompact
+
+    review_daily:
+        name: Daily review from Open-Meteo API - By default, data is not written to database
+        my_database_daily: no
+        my_database_maxage: 92
+
+        daily:
+            my_database: ..:my_database_daily
+            my_database_maxage: ..:.
+
+            day0:
+                name: Gestern
+                _day: -1
+                struct: ._dayFields
+
+            day1:
+                name: Vorgestern
+                _day: -2
+                struct: ._dayFields
+
+            day2:
+                name: Vor 3 Tagen
+                _day: -3
+                struct: ._dayFieldsCompact
+
+            day3:
+                name: Vor 4 Tagen
+                _day: -4 
+                struct: ._dayFieldsCompact
+
+            day4:
+                name: Vor 5 Tagen
+                _day: -5
+                struct: ._dayFieldsCompact
+
+            day5:
+                name: Vor 6 Tagen
+                _day: -6
+                struct: ._dayFieldsCompact
+
+            day6:
+                name: Vor 7 Tagen
+                _day: -7
+                struct: ._dayFieldsCompact
+
+    # CURRENT WEATHER STRUCT BASIC:
+    _currentFieldsBasic:
+        my_database: ..:.
+        my_database_maxage: ..:.
+
+        time:
+            type: str
+            om_matchstring_@instance: current/time
+
+        temperature:
+            type: num
+            om_matchstring_@instance: current/temperature_2m
+
+        apparent_temperature:
+            type: num
+            om_matchstring_@instance: current/apparent_temperature
+
+        is_day:
+            type: num
+            om_matchstring_@instance: current/is_day
+
+        precipitation:
+            type: num
+            om_matchstring_@instance: current/precipitation
+
+        relative_humidity:
+            type: num
+            om_matchstring_@instance: current/relative_humidity_2m
+
+        weather_code:
+            type: str
+            om_matchstring_@instance: current/weather_code
+
+        wind_direction:
+            type: num
+            om_matchstring_@instance: current/wind_direction_10m
+
+        wind_speed:
+            type: num
+            om_matchstring_@instance: current/wind_speed_10m
+
+    # CURRENT WEATHER STRUCT COMPACT:
+    _currentFieldsCompact:
+        my_database: ..:.
+        my_database_maxage: ..:.
+        struct: ._currentFieldsBasic
+
+        cloud_cover:
+            type: num
+            om_matchstring_@instance: current/cloud_cover
+
+        dew_point:
+            type: num
+            om_matchstring_@instance: current/dew_point_2m
+
+        pressure_msl:
+            type: num
+            om_matchstring_@instance: current/pressure_msl
+
+        rain:
+            type: num
+            om_matchstring_@instance: current/rain
+
+        showers:
+            type: num
+            om_matchstring_@instance: current/showers
+
+        snowfall:
+            type: num
+            om_matchstring_@instance: current/snowfall
+
+        visibility:
+            type: num
+            om_matchstring_@instance: current/visibility
+
+        wind_gusts:
+            type: num
+            om_matchstring_@instance: current/wind_gusts_10m
+
+    # CURRENT WEATHER STRUCT FULL:
+    _currentFields:
+        my_database: ..:.
+        my_database_maxage: ..:.
+        struct: ._currentFieldsCompact
+
+        cape:
+            type: num
+            om_matchstring_@instance: current/cape
+
+        cloud_cover_high:
+            type: num
+            om_matchstring_@instance: current/cloud_cover_high
+
+        cloud_cover_low:
+            type: num
+            om_matchstring_@instance: current/cloud_cover_low
+
+        cloud_cover_mid:
+            type: num
+            om_matchstring_@instance: current/cloud_cover_mid
+
+        diffuse_radiation:
+            type: num
+            om_matchstring_@instance: current/diffuse_radiation
+
+        direct_normal_irradiance:
+            type: num
+            om_matchstring_@instance: current/direct_normal_irradiance
+
+        direct_radiation:
+            type: num
+            om_matchstring_@instance: current/direct_radiation
+
+        et0_fao_evapotranspiration:
+            type: num
+            om_matchstring_@instance: current/et0_fao_evapotranspiration
+
+        evapotranspiration:
+            type: num
+            om_matchstring_@instance: current/evapotranspiration
+
+        freezing_level_height:
+            type: num
+            om_matchstring_@instance: current/freezing_level_height
+
+        global_tilted_irradiance:
+            type: num
+            om_matchstring_@instance: current/global_tilted_irradiance
+
+        shortwave_radiation:
+            type: num
+            om_matchstring_@instance: current/shortwave_radiation
+
+        snow_depth:
+            type: num
+            om_matchstring_@instance: current/snow_depth
+
+        soil_moisture_0_to_1cm:
+            type: num
+            om_matchstring_@instance: current/soil_moisture_0_to_1cm
+
+        soil_moisture_1_to_3cm:
+            type: num
+            om_matchstring_@instance: current/soil_moisture_1_to_3cm
+
+        soil_moisture_27_to_81cm:
+            type: num
+            om_matchstring_@instance: current/soil_moisture_27_to_81cm
+
+        soil_moisture_3_to_9cm:
+            type: num
+            om_matchstring_@instance: current/soil_moisture_3_to_9cm
+
+        soil_moisture_9_to_27cm:
+            type: num
+            om_matchstring_@instance: current/soil_moisture_9_to_27cm
+
+        soil_temperature_0cm:
+            type: num
+            om_matchstring_@instance: current/soil_temperature_0cm
+
+        soil_temperature_18cm:
+            type: num
+            om_matchstring_@instance: current/soil_temperature_18cm
+
+        soil_temperature_54cm:
+            type: num
+            om_matchstring_@instance: current/soil_temperature_54cm
+
+        soil_temperature_6cm:
+            type: num
+            om_matchstring_@instance: current/soil_temperature_6cm
+
+        surface_pressure:
+            type: num
+            om_matchstring_@instance: current/surface_pressure
+
+        vapour_pressure_deficit:
+            type: num
+            om_matchstring_@instance: current/vapour_pressure_deficit
+
+        wind_direction_120m:
+            type: num
+            om_matchstring_@instance: current/wind_direction_120m
+
+        wind_direction_180m:
+            type: num
+            om_matchstring_@instance: current/wind_direction_180m
+
+        wind_direction_80m:
+            type: num
+            om_matchstring_@instance: current/wind_direction_80m
+
+        wind_speed_120m:
+            type: num
+            om_matchstring_@instance: current/wind_speed_120m
+
+        wind_speed_180m:
+            type: num
+            om_matchstring_@instance: current/wind_speed_180m
+
+        wind_speed_80m:
+            type: num
+            om_matchstring_@instance: current/wind_speed_80m
+
+    # HOURLY FORECAST STRUCT BASIC: Basisfelder für einfache Stundenvorhersagen
+    _hourFieldsBasic:
+        my_database: ..:.
+        my_database_maxage: ..:.
+
+        time:
+            type: str
+            om_matchstring_@instance: "hourly/{..:_hour}/time"
+
+        temperature:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/temperature_2m"
+
+        weather_code:
+            type: str
+            om_matchstring_@instance: "hourly/{..:_hour}/weather_code"
+
+        precipitation_probability:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/precipitation_probability"
+
+        precipitation:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/precipitation"
+
+        wind_speed:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/wind_speed_10m"
+
+    # HOURLY FORECAST STRUCT COMPACT: Baut auf Basic auf und fügt Detailwerte hinzu
+    _hourFieldsCompact:
+        struct: ._hourFieldsBasic
+
+        apparent_temperature:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/apparent_temperature"
+
+        dew_point:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/dew_point_2m"
+
+        rain:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/rain"
+
+        snowfall:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/snowfall"
+
+        wind_gusts:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/wind_gusts_10m"
+
+        humidity:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/relative_humidity_2m"
+
+    # HOURLY FORECAST STRUCT FULL: Baut auf Compact auf und enthält alle verbleibenden Spezialfelder
+    _hourFields:
+        struct: ._hourFieldsCompact
+
+        wet_bulb_temperature:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/wet_bulb_temperature_2m"
+
+        wind_direction:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/wind_direction_10m"
+
+        pressure:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/surface_pressure"
+
+        pressure_msl:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/pressure_msl"
+
+        cloud_cover:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/cloud_cover"
+
+        uv_index:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/uv_index"
+
+        shortwave_radiation:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/shortwave_radiation"
+
+        soil_temperature:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/soil_temperature_0cm"
+
+        visibility:
+            type: num
+            om_matchstring_@instance: "hourly/{..:_hour}/visibility"
+
+    # DAILY FORECAST STRUCT COMPACT: Basis-Tageswerte
+    _dayFieldsCompact:
+        my_database: ..:.
+        my_database_maxage: ..:.
+
+        time:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/time"
+
+        weather_code:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/weather_code"
+
+        temperature_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/temperature_2m_max"
+
+        temperature_min:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/temperature_2m_min"
+
+        apparent_temperature_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/apparent_temperature_max"
+
+        apparent_temperature_min:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/apparent_temperature_min"
+
+        sunrise:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/sunrise"
+
+        sunset:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/sunset"
+
+        uv_index_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/uv_index_max"
+
+        precipitation_sum:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/precipitation_sum"
+
+        precipitation_probability_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/precipitation_probability_max"
+
+        wind_speed_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/wind_speed_10m_max"
+
+        wind_gusts_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/wind_gusts_10m_max"
+
+        wind_direction_dominant:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/wind_direction_10m_dominant"
+
+        shortwave_radiation_sum:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/shortwave_radiation_sum"
+
+    # DAILY FORECAST STRUCT FULL: Baut auf Compact auf und fügt weitere Werte hinzu
+    _dayFields:
+        struct: ._dayFieldsCompact
+
+        temperature_mean:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/temperature_2m_mean"
+
+        daylight_duration:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/daylight_duration"
+
+        moonrise:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/moonrise"
+
+        moonset:
+            type: str
+            om_matchstring_@instance: "daily/{..:_day}/moonset"
+
+        moon_phase:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/moon_phase"
+
+        uv_index_clear_sky_max:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/uv_index_clear_sky_max"
+
+        et0:
+            type: num
+            om_matchstring_@instance: "daily/{..:_day}/et0_fao_evapotranspiration"
+
+# ==============================================================================
+# FURTHER STRUCTS
+# ==============================================================================
+
+    _windSpeedStruct:
+        type: num
+        #pw_matchstring@instance: currently/windGust
+        database@instance: ..:my_database
+        database_maxage@instance: ..:my_database_maxage
+
+        beaufortNr:
+            name: Wind speed as beaufort number
+            type: num
+            eval: env.kmh_to_bft(sh...())
+            eval_trigger: ..
+
+        beaufortString:
+            name: Wind speed as beaufort description
+            type: str
+            eval: env.bft_to_text( sh...beaufortNr() )
+            eval_trigger: ..
+
+    _windBearingStruct:
+        type: num
+        #pw_matchstring@instance: currently/windBearing
+        database@instance: ..:my_database
+        database_maxage@instance: ..:my_database_maxage
+
+        windDirectionString:
+            type: str
+            eval_trigger: ..
+            eval: env.degrees_to_direction_16(sh...())
+
+logic_parameters: NONE
+
+plugin_functions: NONE
