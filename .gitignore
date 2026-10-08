@@ -1,0 +1,16 @@
+# Systemdateien & Betriebssystem
+.DS_Store
+Thumbs.db
+
+# IDEs & Editoren
+.vscode/
+.idea/
+
+# Abhängigkeiten / Libraries
+node_modules/
+venv/
+__pycache__/
+
+# Umgebungsvariablen & Zugangsdaten
+.env
+*.log
